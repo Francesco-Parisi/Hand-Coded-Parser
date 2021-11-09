@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Tester11" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="RecDesParser" />
+    <module name="parisi-rossi_es3_hcp" />
+    <option name="PROGRAM_PARAMETERS" value="test_files\file_source11-incorrect.txt" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
