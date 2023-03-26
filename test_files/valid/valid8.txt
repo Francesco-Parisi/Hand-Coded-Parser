@@ -1,0 +1,9 @@
+if a && B then
+    while a < 200 loop
+        if a < 300 then
+            a <-- 42
+        end if
+    end loop
+else
+    a <-- 42
+end if

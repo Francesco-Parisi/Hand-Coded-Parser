@@ -1,0 +1,16 @@
+while a > 2 loop
+    if a < 2 then
+        a <-- 5
+    else
+        if b then
+            b <-- 7
+        else
+            b <-- 2
+        end if
+    end if
+end loop;
+while a loop
+    if a < 1 then
+        a <- 1
+    end if
+end loop;

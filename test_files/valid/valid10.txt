@@ -1,0 +1,12 @@
+while x < 2 loop x <-- 2 end loop;
+if a < 1 then
+    a <-- 1
+else
+    a <-- 0
+end if;
+while id loop x <-- id end loop;
+if pippo<x then
+    id <--y
+else
+    id <-- 3
+end if

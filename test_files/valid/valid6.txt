@@ -1,0 +1,16 @@
+while a loop
+    if a < 1 then
+        a <-- 1
+    end if
+end loop;
+while a loop
+    if a < 1 then
+        a <-- 1
+    else
+        if a >= 1 then
+            a <-- 2
+        else
+            a <-- 1
+        end if
+    end if
+end loop

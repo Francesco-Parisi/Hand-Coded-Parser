@@ -1,16 +1,12 @@
-Realizzazione di un Parser in Java.
-
-Esercitazione 3 del Corso Compilatori dell'Università degli studi di Salerno.
-
 ## Table
 
 |Lessema|Token|Attributo|
-|------|------|---------|
+|-----|-----|-------|
 |**Delimitatori**|
-|* *|DELIM|-|
-|*\n*|DELIM|-|
-|*\t*|DELIM|-|
-|*"*|DELIM|-|
+|* *|-|-|
+|*\n*|-|-|
+|*\t*|-|-|
+|*"*|-|-|
 ||||
 |**Separatori**|
 |(|SEPA|OPT|
@@ -29,13 +25,13 @@ Esercitazione 3 del Corso Compilatori dell'Università degli studi di Salerno.
 |<>|RELOP|DIS|
 |>|RELOP|MAX|
 |>=|RELOP|MAXEQ|
-|<--|ASSIGN|
+|<--|ASSIGN|-|
 ||||
 |**Identificatori**|
-|id|ID|
+|id|-|-|
 ||||
 |**Numeri**|
-|numero|NUM|
+|numero|-|-|
 ||||
 |**Operatori Aritmetici**|
 |+|AOP|ADD|
@@ -44,15 +40,17 @@ Esercitazione 3 del Corso Compilatori dell'Università degli studi di Salerno.
 |/|AOP|DIV|
 |%|AOP|MOD|
 |**Operatori Logici**|
-|&&|LOP|AND|
-|\| \||LOP|OR|
+|&&|RELOP|AND|
+|&#124;&#124;|RELOP|OR|
 
 
 ## Grammar
 
- N = {S, Program, Stmt, Expr},
- T = {EOF. ';', IF, THEN, ELSE, END, ID, ASSIGN, WHILE, LOOP, RELOP, NUMBER},  
- S
+N = {S, Program, Stmt, Expr},
+
+T = {EOF,   ';' , IF, THEN, ELSE, END, ID, ASSIGN, WHILE, LOOP, RELOP, NUMBER}
+
+S
 
  P = {
 
@@ -60,9 +58,9 @@ Esercitazione 3 del Corso Compilatori dell'Università degli studi di Salerno.
 
           Program -> Program ; Stmt
                            |  Stmt
-           Stmt -> IF Expr THEN Stmt ELSE Stmt END IF
+           Stmt -> IF Expr THEN Stmt END IF
+                     | IF Expr THEN Stmt ELSE Stmt END IF
                      | ID ASSIGN Expr
-
                      | WHILE Epr LOOP Stmt END LOOP
 
           Expr ->  Expr  RELOP Expr
@@ -78,15 +76,15 @@ La grammatica risultante è la seguente:
       S -> Program EOF
       Program -> Stmt S'
       S' -> ; Stmt S'
-      S' -> eps
-      Stmt -> IF Expr THEN Stmt ELSE Stmt END IF
+      S' -> ''
+      Stmt -> IF Expr THEN Stmt R' END IF
       Stmt -> ID ASSIGN Expr
       Stmt -> WHILE Expr LOOP Stmt END LOOP
+      R' -> ELSE Stmt
+      R' -> ''
       Expr -> ID E'
       Expr -> NUMBER E'
       E' -> RELOP Expr E'
-      E' -> eps
-
-La grammatica pur effettuando la trasformazione risulta comunque ambigua.
+      E' -> ''
 
 ## Note

@@ -1,0 +1,8 @@
+if b && a then
+    a <-- 42
+    else
+    while a < 3 loop
+        a <-- 42
+    end loop
+end if;
+id <-- 5

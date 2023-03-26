@@ -3,338 +3,449 @@ import java.util.*;
 
 public class Lexer {
 
-    private int dot;
-    private File inputFile;
-    private RandomAccessFile ra_file;
-    private static HashMap<String, Token> stringTable;  // la struttura dati potrebbe essere una hash map
-    private int state;
+     private int dot;
+     private File inputFile;
+     private RandomAccessFile ra_file;
+     private static HashMap<String, Token> stringTable;  // la struttura dati potrebbe essere una hash map
+     private int state;
 
-    public Lexer() {
-        // la symbol table in questo caso la chiamiamo stringTable
-        stringTable = new HashMap<String, Token>();
-        dot = 0;
-        state = 0;
+     public Lexer() {
+          // la symbol table in questo caso la chiamiamo stringTable
+          stringTable = new HashMap<String, Token>();
+          dot = 0;
+          state = 100;
+          //Inserimento delle parole chiavi nella stringTable per evitare di scrivere un diagramma di transizione per ciascuna di esse (le parole chiavi verranno "catturate" dal diagramma di transizione e gestite e di conseguenza). IF poteva anche essere associato ad una costante numerica
+          stringTable.put("if", new Token("IF"));
+          stringTable.put("then", new Token("THEN"));
+          stringTable.put("else", new Token("ELSE"));
+          stringTable.put("while", new Token("WHILE"));
+          stringTable.put("end",new Token("END"));
+          stringTable.put("loop",new Token("LOOP"));
+          stringTable.put("for", new Token("FOR"));
+          stringTable.put("int", new Token("INT"));
+          stringTable.put("float", new Token("FLOAT"));
+     }
 
-        //Inserimento delle parole chiavi nella stringTable per evitare di scrivere un diagramma di transizione per ciascuna di esse (le parole chiavi verranno "catturate" dal diagramma di transizione e gestite e di conseguenza). IF poteva anche essere associato ad una costante numerica
-        stringTable.put("if", new Token("IF","if"));
-        stringTable.put("then", new Token("THEN","then"));
-        stringTable.put("else", new Token("ELSE","else"));
-        stringTable.put("while", new Token("WHILE","while"));
-        stringTable.put("end",new Token("END","end"));
-        stringTable.put("loop",new Token("LOOP","loop"));
-        stringTable.put("for", new Token("FOR","for"));
-        stringTable.put("int", new Token("INT","int"));
-        stringTable.put("float", new Token("FLOAT","float"));
-    }
+     // prepara file input per lettura e controlla errori
+     public boolean initialize(String filePath) throws IOException {
+          inputFile = new File(filePath);
+          ra_file = new RandomAccessFile(inputFile, "r");
+          return inputFile.exists();
+     }
 
-    // prepara file input per lettura e controlla errori
-    public boolean initialize(String filePath) throws IOException {
-        inputFile = new File(filePath);
-        ra_file = new RandomAccessFile(inputFile, "r");
-        return inputFile.exists();
-    }
+     public int AnotherChar() throws IOException {
+          ra_file.seek(dot++);
+          return ra_file.read();
+     }
 
-    public int AnotherChar() throws IOException {
-        ra_file.seek(dot++);
-        return ra_file.read();
-    }
+     public Token nextToken() throws Exception {
+          //Ad ogni chiamata del lexer (nextToken()) si resettano tutte le variabili utilizzate
+          state = 100; // setta lo stato a 0
+          String lessema = ""; //qui si concatena il lessema riconosciuto
+          int value;
+          char c;
 
-    public Token nextToken() throws Exception {
-        //Ad ogni chiamata del lexer (nextToken()) si resettano tutte le variabili utilizzate
-        state = 0; // setta lo stato a 0
-        String lessema = ""; //qui si concatena il lessema riconosciuto
-        int value;
-        char c;
-
-        while (true) {
-            // legge un carattere da input e lancia eccezione quando incontra EOF per restituire null
-            //  per indicare che non ci sono piu token
-            value = AnotherChar(); //value punta a un carattere nel file
-            c = (char) value;
-
-            //Relop Switch
-            switch (state) {
-
-                case 0:
-                    if (Character.isDigit(c)) {
-                        state = 5;
-                    } else if (Character.isLetter(c)) {
-                        state = 1;
-                    } else if (Character.isWhitespace(c)) {
-                        state = 11;
-                    } else if (c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']' || c == ',' || c == ';') {
-                        state = 12;
-                    } else if(c == '+' || c == '-' || c == '*' || c == '/' || c == '%'){
-                        state = 32;
-                    } else if(c == '&'){
-                        state = 33;
-                    } else if(c == '|'){
-                        state = 34;
-                    } else if (c == '>') {
-                        state = 15;
-                    } else if (c == '<') {
-                        state = 14;
-                    } else if (c == '=') {
-                        return new Token("RELOP", "EQ");
-                    } else if (value == -1) {
-                        return new Token("EOF");
-                    } else {
-                        return new Token("ERROR", String.valueOf(c));
+          while (true) {
+               //Si controlla se il valore della funzione ritorna -1
+               //Se abbiamo -1 il file viene chiuso e restutuito il token EOF
+               try {
+                    if ((value = AnotherChar()) != -1) {
+                         c = (char) value;
                     }
-                    break;
-
-                case 14:
-                    if (c == '=') {
-                        return new Token("RELOP", "MINEQ");
-                    } else if( c == '>'){
-                        return new Token("RELOP", "DIS");
-                    } else if( c == '-'){
-                        state = 28;
-                    } else {
-                        retrack();
-                        return new Token("RELOP", "MIN");
+                    else
+                    {
+                         ra_file.close();
+                         Token token= new Token("EOF");
+                         stringTable.put(lessema,token);
+                         return token;
                     }
-                    break;
+               }
+               catch(IOException e) {
+                    return null;
+               }
 
-                case 15:
-                    if (c == '=') {
-                        return new Token("RELOP", "MAXEQ");
-                    } else {
-                        retrack();
-                        return new Token("RELOP", "MAX");
-                    }
+               //Initial Switch
+               switch (state) {
 
-                case 28:
-                    if(c == '-'){
-                        return new Token("ASSIGN");
-                    } else {
-                        retrack();
-                        retrack();
-                        return new Token("RELOP", "MIN");
-                    }
-            } //End Relop Switch
+                    case 100:
+                         if (Character.isDigit(c)) {
+                              state = 12;
+                         } else if (Character.isLetter(c)) {
+                              state = 9;
+                         } else if (Character.isWhitespace(c)|| c =='"') {
+                              state = 32;
+                         } else if(c == '+' || c == '-' || c == '*' || c == '/' || c == '%'){
+                              state = 22;
+                         } else if (c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']' || c == ',' || c == ';') {
+                              state = 24;
+                         } else if(c == '&'){
+                              state = 26;
+                         } else if(c == '|'){
+                              state = 29;
+                         } else if (c == '>' || c =='<'|| c=='=') {
+                              state = 34;
+                         }else {
+                              return new Token("ERROR", String.valueOf(c));
+                         }
+                         break;
+               } //End Initial Switch
 
-            //Identificators Switch
-            switch (state){
-                case 1:
-                    if(Character.isLetter(c)){
-                        state = 20;
-                        lessema += c;
-                        if (value == -1)
-                            return installID(lessema);
-                        break;
-                    } else {
-                        state = 5;
-                    }
-                    break;
+               //Relop Switch
+               switch (state){
+                    case 34:
+                         if(c == '>'){
+                              state = 6;
+                              if(nextChar()){
+                                   return new Token("RELOP", "MAX");
+                              }
+                         }else if (c == '<') {
+                              lessema += c;
+                              if(nextChar()){
+                                   return new Token("RELOP", "MIN");
+                              }
+                              state = 1;
+                         }else if (c == '=') {
+                              return new Token("RELOP", "EQ");
+                         }
+                         break;
 
-                case 20:
-                    if(Character.isLetterOrDigit(c)){
-                        lessema +=c;
-                        if(value == -1){
-                            return installID(lessema);
-                        }
-                    } else{
-                        retrack();
-                        return installID(lessema);
-                    }
-            } // End Identificators Switch
+                    case 1:
+                         if (c == '=') {
+                              return new Token("RELOP", "MINEQ");
+                         } else if( c == '>'){
+                              return new Token("RELOP", "DIS");
+                         } else if( c == '-'){
+                              lessema += c;
+                              if(nextChar()){
+                                   return new Token("ERROR", lessema);
+                              }
+                              state = 33;
+                         } else {
+                              retrack();
+                              return new Token("RELOP", "MIN");
+                         }
+                         break;
 
-            //Numbers Switch
-            switch (state){
-                case 5:
-                    if(Character.isDigit(c)){
-                        state = 21;
-                        lessema += c;
-                    } else {
-                        retrack();
-                        return new Token("NUM", lessema);
-                    }
-                    break;
+                    case 6:
+                         if (c == '=') {
+                              return new Token("RELOP", "MAXEQ");
+                         } else {
+                              retrack();
+                              return new Token("RELOP", "MAX");
+                         }
 
-                case 21:
-                    if(Character.isDigit(c)){
-                        state = 21;
-                        lessema += c;
-                    } else if(c =='.'){
-                        state = 10;
-                        lessema += c;
-                    } else if(c == 'E'){
-                        state = 38;
-                        lessema +=c;
-                    }else {
-                        retrack();
-                        return new Token("NUM", lessema);
-                    }
-                    break;
+                    case 33:
+                         if(c == '-'){
+                              return new Token("ASSIGN");
+                         } else {
+                              retrack();
+                              return new Token("ERROR", lessema);
+                         }
+               } //End Relop Switch
 
-                case 10:
-                    if(Character.isDigit(c)){
-                        state = 31;
-                        lessema += c;
-                    } else if(value == -1){
-                        return new Token("NUM", lessema);
-                    } else{
-                        retrack();
-                        return new Token("NUM", lessema);
-                    }
-                    break;
+               //Identificators Switch
+               switch (state){
+                    case 9:
+                         if (Character.isLetter(c)) {
+                              lessema += c;
+                              if(nextChar()){
+                                   return installID(lessema);
+                              }
+                              state = 10;
+                         }
+                         break;
 
-                case 31:
-                    if(Character.isDigit(c)){
-                        state = 31;
-                        lessema += c;
-                    } else if (c == 'E') {
-                        state = 38;
-                        lessema += c;
-                    } else if(value == -1){
-                        return new Token("NUM", lessema);
-                    } else{
-                        retrack();
-                        return new Token("NUM", lessema);
-                    }
-                    break;
+                    case 10:
+                         if(Character.isLetterOrDigit(c)){
+                              state=10;
+                              lessema +=c;
+                              if(nextChar())
+                                   return installID(lessema);
+                              break;
+                         } else {
+                              retrack();
+                              return installID(lessema);
+                         }
+               } //End Identificators Switch
 
-                case 38:
-                    if(Character.isDigit(c)){
-                        state = 40;
-                        lessema += c;
-                    } else if(c == '+' || c == '-'){
-                        state = 39;
-                        lessema += c;
-                    } else {
-                        state = 11;
-                    }
-                    break;
+               //Numbers Switch
+               switch (state){
+                    case 12:
+                         if(Character.isDigit(c)){
+                              lessema += c;
+                              if(nextChar()){
+                                   return installNUM(lessema);
+                              }
+                              state = 13;
+                         } else {
+                              retrack();
+                              return(installNUM(lessema));
+                         }
+                         break;
 
-                case 39:
-                    if (Character.isDigit(c)) {
-                        state = 40;
-                        lessema += c;
-                    }
-                    break;
+                    case 13:
+                         if(Character.isDigit(c)){
+                              lessema += c;
+                              if(nextChar()){
+                                   return installNUM(lessema);
+                              }
+                              state = 13;
+                         } else if(c =='.'){
+                              lessema += c;
+                              if (nextChar()) {
+                                   retrack();
+                                   retrack();
+                                   lessema = lessema.substring(0,lessema.length()-1);
+                                   return installNUM(lessema);
+                              }
+                              state = 14;
+                         } else if(c == 'E'){
+                              lessema +=c;
+                              if (nextChar()) {
+                                   retrack();
+                                   retrack();
+                                   lessema = lessema.substring(0,lessema.length()-1);
+                                   return installNUM(lessema);
+                              }
+                              state = 16;
+                         } else {
+                              retrack();
+                              return(installNUM(lessema));
+                         }
+                         break;
 
-                case 40:
-                    if(Character.isDigit(c)){
-                        state = 40;
-                        lessema += c;
-                    } else{
-                        retrack();
-                        return new Token("NUM", lessema);
-                    }
+                    case 17:
+                         if(Character.isDigit(c)){
+                              lessema += c;
+                              if(nextChar()){
+                                   return installNUM(lessema);
+                              }
+                              state = 18;
+                         } else {
+                              retrack();
+                              retrack();
+                              retrack();
+                              lessema = lessema.substring(0,lessema.length()-2);
+                              return(installNUM(lessema));
 
-            } //End Numbers Switch
+                         }
+                         break;
 
-            //Arithmetic Operators Switch
-            switch (state){
-                case 32:
-                    if(c == '+')
-                        return new Token("AOP","ADD");
-                    else if(c == '-')
-                        return new Token("AOP","SUB");
-                    else if(c == '*')
-                        return new Token("AOP","MUL");
-                    else if(c == '/')
-                        return new Token("AOP","DIV");
-                    else if(c == '%')
-                        return new Token("AOP","MOD");
-            } // End Arithmetic Operators Switch
+                    case 14:
+                         if(Character.isDigit(c)){
+                              lessema += c;
+                              if(nextChar()){
+                                   return installNUM(lessema);
+                              }
+                              state = 15;
+                         } else {
+                              retrack();
+                              retrack();
+                              lessema = lessema.substring(0,lessema.length()-1);
+                              return(installNUM(lessema));
+                         }
+                         break;
 
-            //Logic Operators Switch
-            switch (state){
-                case 33:
-                    if (c == '&'){
-                        state = 35;
-                        lessema += c;
-                    } else {
-                        retrack();
-                        return new Token("ERROR", String.valueOf(c));
-                    }
-                    break;
+                    case 15:
+                         if(Character.isDigit(c)){
+                              lessema += c;
+                              if (nextChar()) {
+                                   return installNUM(lessema);
+                              }
+                              state = 15;
+                         } else if (c == 'E') {
+                              lessema += c;
+                              if(nextChar()){
+                                   retrack();
+                                   retrack();
+                                   lessema = lessema.substring(0,lessema.length()-1);
+                                   return installNUM(lessema);
+                              }
+                              state = 16;
+                         } else{
+                              retrack();
+                              return(installNUM(lessema));
+                         }
+                         break;
 
-                case 34:
-                    if (c == '|'){
-                        state = 37;
-                        lessema += c;
-                    } else {
-                        retrack();
-                        return new Token("ERROR", String.valueOf(c));
-                    }
-                    break;
+                    case 16:
+                         if(Character.isDigit(c)){
+                              lessema += c;
+                              if(nextChar()){
+                                   return installNUM(lessema);
+                              }
+                              state = 18;
+                         } else if(c == '+' || c == '-'){
+                              lessema += c;
+                              if(nextChar()){
+                                   retrack();
+                                   retrack();
+                                   retrack();
+                                   lessema = lessema.substring(0,lessema.length()-1);
+                                   return installNUM(lessema);
+                              }
+                              state = 17;
+                         } else {
+                              retrack();
+                              retrack();
+                              lessema = lessema.substring(0,lessema.length()-1);
+                              return(installNUM(lessema));
+                         }
+                         break;
 
-                case 35:
-                    if (c == '&'){
-                        return new Token("LOP", "AND");
-                    } else{
-                        retrack();
-                        return new Token("ERROR", String.valueOf(lessema));
-                    }
+                    case 18:
+                         if (Character.isDigit(c)) {
+                              lessema += c;
+                              if(nextChar()){
+                                   return installNUM(lessema);
+                              }
+                              state = 18;
+                         } else {
+                              retrack();
+                              return(installNUM(lessema));
+                         }
+                         break;
 
-                case 37:
-                    if (c == '|'){
-                        return new Token("LOP", "OR");
-                    } else{
-                        retrack();
-                        return new Token("ERROR", String.valueOf(lessema));
-                    }
-            } //Logic Operators Switch
+               } //End Numbers Switch
 
-            //Delim Switch
-            switch (state){
-                case 11:
-                    if (Character.isWhitespace(c)) {
-                        c = (char) value;
-                        state = 11;
-                    } else{
-                        state = 12;
-                    }
-                    break;
+               //Arithmetic Operators Switch
+               switch (state){
+                    case 22:
+                         if(c == '+')
+                              return new Token("AOP","ADD");
+                         else if(c == '-')
+                              return new Token("AOP","SUB");
+                         else if(c == '*')
+                              return new Token("AOP","MUL");
+                         else if(c == '/')
+                              return new Token("AOP","DIV");
+                         else if(c == '%')
+                              return new Token("AOP","MOD");
+               } //End Arithmetic Operators Switch
 
-            } //End Delim Switch
+               //Logic Operators Switch
+               switch (state){
+                    case 26:
+                         if (c == '&'){
+                              lessema += c;
+                              if(nextChar()){
+                                   return new Token("ERROR", lessema);
+                              }
+                              state = 27;
+                         } else {
+                              retrack();
+                              return new Token("ERROR", lessema);
+                         }
+                         break;
 
-            //Separators Switch
-            switch (state) {
+                    case 29:
+                         if (c == '|'){
+                              lessema += c;
+                              if(nextChar()){
+                                   return new Token("ERROR", lessema);
+                              }
+                              state = 31;
+                         } else {
+                              retrack();
+                              return new Token("ERROR", lessema);
+                         }
+                         break;
 
-                case 12:
-                    if (c == '(')
-                        return new Token("OPT");
-                    else if (c == ')')
-                        return new Token("QTT");
-                    else if (c == '{')
-                        return new Token("OPG");
-                    else if (c == '}')
-                        return new Token("QTG");
-                    else if (c == '[')
-                        return new Token("OPQ");
-                    else if (c == ']')
-                        return new Token("QTQ");
-                    else if (c == ',')
-                        return new Token("VIR");
-                    else if (c == ';')
-                        return new Token("PVIR");
+                    case 27:
+                         if (c == '&'){
+                              return new Token("RELOP", "AND");
+                         } else{
+                              retrack();
+                              return new Token("ERROR", lessema);
+                         }
 
-                    else {
-                        retrack();
-                        state = 0;
-                    }
+                    case 31:
+                         if (c == '|'){
+                              return new Token("RELOP", "OR");
+                         } else{
+                              retrack();
+                              return new Token("ERROR", lessema);
+                         }
+               } //End Logic Operators Switch
 
-            } //End Separators Switch
-        }
-    }
-    private Token installID(String lessema) {
-        Token token;
+               //Delim Switch
+               switch (state){
+                    case 32:
+                         if (Character.isWhitespace(c) || c=='"') {
+                              state = 32;
+                         } else{
+                              state = 24;
+                         }
+                         break;
 
-        //utilizzo come chiave della hashmap il lessema
-        if (stringTable.containsKey(lessema))
-            return stringTable.get(lessema);
-        else {
-            token = new Token("ID", lessema);
-            stringTable.put(lessema, token);
-            return token;
-        }
-    }
+               } //End Delim Switch
 
-    private void retrack() {
-        dot--;
-    }
+               //Separators Switch
+               switch (state) {
+
+                    case 24:
+                         if (c == '(')
+                              return new Token("OPT",String.valueOf(c));
+                         else if (c == ')')
+                              return new Token("QTT",String.valueOf(c));
+                         else if (c == '{')
+                              return new Token("OPG",String.valueOf(c));
+                         else if (c == '}')
+                              return new Token("QTG",String.valueOf(c));
+                         else if (c == '[')
+                              return new Token("OPQ",String.valueOf(c));
+                         else if (c == ']')
+                              return new Token("QTQ",String.valueOf(c));
+                         else if (c == ',')
+                              return new Token("VIR",String.valueOf(c));
+                         else if (c == ';')
+                              return new Token("PVIR",String.valueOf(c));
+
+                         else {
+                              retrack();
+                              state = 100;
+                         }
+
+               } //End Separators Switch
+          }
+     }
+
+     private Token installID(String lessema) {
+          Token token;
+
+          if (stringTable.containsKey(lessema))
+               return stringTable.get(lessema);
+          else {
+               token = new Token("ID", lessema);
+               stringTable.put(lessema, token);
+               return token;
+          }
+     }
+     private Token installNUM(String lessema)
+     {
+          Token token =  new Token("NUM",lessema);
+          stringTable.put(lessema, token);
+          return token;
+     }
+
+     private void retrack() {
+          dot--;
+     }
+
+     private boolean nextChar(){
+          try {
+               if(AnotherChar()==-1)
+               {
+                    return true;
+               }
+
+
+          } catch (IOException e) {
+               e.printStackTrace();
+          }
+          retrack();
+          return false;
+
+     }
+
 }

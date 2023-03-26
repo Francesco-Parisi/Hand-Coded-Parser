@@ -1,0 +1,4 @@
+if b < 3 loop
+    b <-- 42
+end
+end if
