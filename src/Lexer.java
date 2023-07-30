@@ -2,7 +2,6 @@ import java.io.*;
 import java.util.*;
 
 public class Lexer {
-
      private int dot;
      private File inputFile;
      private RandomAccessFile ra_file;

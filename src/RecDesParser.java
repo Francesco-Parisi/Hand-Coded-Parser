@@ -1,30 +1,6 @@
-/*
-	  Program to implement Recursive Descent Parser in Java
-
-	  Grammar:
-
-      S -> Program EOF
-      Program -> Stmt S'
-      S' -> ; Stmt S'
-      S' -> ''
-      Stmt -> IF Expr THEN Stmt R' END IF
-      Stmt -> ID ASSIGN Expr
-      Stmt -> WHILE Expr LOOP Stmt END LOOP
-      R' -> ELSE Stmt
-      R' -> ''
-      Expr -> ID E'
-      Expr -> NUMBER E'
-      E' -> RELOP Expr E'
-      E' -> ''
-*/
-
-import java.io.IOException;
-import java.util.*;
-
-class RecDesParser {
+public class RecDesParser {
      static Lexer analyzer = new Lexer();
      static Token token;
-
      public static void main(String args[]) throws Exception {
           String filePath = args[0];
 
@@ -32,9 +8,9 @@ class RecDesParser {
                if ((token = analyzer.nextToken()) != null) {
                     boolean isValid = S();
                     if ((isValid)) {
-                         System.out.println("The input string is valid.");
+                         System.out.println("Input is valid");
                     } else {
-                         System.out.println("Syntax Error.");
+                         System.out.println("Syntax error");
                     }
                }
           }

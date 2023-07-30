@@ -6,10 +6,8 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="parisi-rossi_es3" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="parisi-rossi_es3" target="17" />
-    </bytecodeTargetLevel>
   </component>
 </project>

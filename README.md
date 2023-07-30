@@ -1,7 +1,3 @@
-Realizzazione di un Parser in Java.
-
-Esercitazione 3 del Corso Compilatori dell'Università degli studi di Salerno.
-
 ## Table
 
 |Lessema|Token|Attributo|
